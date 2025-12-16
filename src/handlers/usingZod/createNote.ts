@@ -1,49 +1,35 @@
 import mongoose from "mongoose";
 import { defineExpressHandler, htZodFactory } from "hipthrusts";
 import { z } from "zod";
-import { Note } from '../../models/note';
+import { Note } from "../../models/mongoose/note";
+import { ExtractUserId, RequireAuthenticated } from "../mixins/auth";
+import { NoteRequestSchema, NoteResponseSchema} from '../../models/zod/note';
 
 // Initialize Zod adapter
-const {
-  SanitizeBodyWithZod,
-  SanitizeResponseWithZod,
-} = htZodFactory();
+const { SanitizeBodyWithZod, SanitizeResponseWithZod } = htZodFactory();
 
-// Define Zod schemas for validation
-const NoteRequestSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  content: z.string().min(1, "Content is required"),
-  secret: z.string().optional(),
-});
-
-const NoteResponseSchema = z.object({
-  _id: z.instanceof(mongoose.Types.ObjectId),
-  title: z.string(),
-  content: z.string(),
-  ownerId: z.instanceof(mongoose.Types.ObjectId),
-  secret: z.string().optional(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
-});
 
 export const CreateNoteHandlerUsingZod = defineExpressHandler({
-  initPreContext: (context: any) => {
-    const newcontext = { userId: context.req.userId as string };
-    return newcontext;
-  },
-  sanitizeParams: async ({ params }: any): Promise<any> => params,
+  // Extract userId from request
+  ...ExtractUserId,
+
+  // Validate request body
   ...SanitizeBodyWithZod(NoteRequestSchema),
-  preAuthorize: (context: any): Record<string, string> => ({ ...context }),
-  // attachData: In a real app, you might fetch user info here for authorization
-  // For example: fetch user from DB to check permissions, quotas, etc.
+
+  // Check user is authenticated (all authenticated users can create notes)
+  ...RequireAuthenticated,
+
+  // No additional data to attach
   attachData: async (context: any) => {
-    // For this simple case, we don't need to attach additional data
-    // In a real app, you might do:
-    // const user = await User.findById(context.userId);
-    // return { user };
     return {};
   },
-  finalAuthorize: (context: any): any => ({ ...context }),
+
+  // All authenticated users can create notes
+  finalAuthorize: (context: any) => {
+    return true;
+  },
+
+  // Create and save the note
   doWork: async (context: any) => {
     // Create the note document with validated body
     const noteDocument = new Note(context.body);
@@ -56,12 +42,16 @@ export const CreateNoteHandlerUsingZod = defineExpressHandler({
     const saved = await noteDocument.save();
     return { noteDocument: saved };
   },
-  respond: (context: any): any => {
+
+  // Return created note with 201 status
+  respond: (context: any) => {
     return {
       unsafeResponse: context.noteDocument,
       status: 201,
     };
   },
+
+  // Validate response structure
   ...SanitizeResponseWithZod(NoteResponseSchema),
 });
 
