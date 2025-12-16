@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { defineExpressHandler, htMongooseFactory } from "hipthrusts";
-import { NoteSchemaObj, Note } from '../../models/note';
+import { NoteSchemaObj, Note } from "../../models/mongoose/note";
+import { ExtractUserId, RequireAuthenticated } from "../mixins/auth";
 
 // Initialize mongoose adapter
 const {
@@ -15,23 +16,26 @@ const NoteRequestDocFactory = documentFactoryFromForRequest(NoteSchemaObj);
 const NoteResponseDocFactory = documentFactoryFromForResponse(NoteSchemaObj);
 
 export const CreateNoteHandlerUsingMongoose = defineExpressHandler({
-  initPreContext: (context: any) => {
-    const newcontext = { userId: context.req.userId as string };
-    return newcontext;
-  },
-  sanitizeParams: async ({ params }: any): Promise<any> => params,
+  // Extract userId from request
+  ...ExtractUserId,
+
+  // Validate request body
   ...SanitizeBodyWithMongoose(NoteRequestDocFactory),
-  preAuthorize: (context: any): Record<string, string> => ({ ...context }),
-  // attachData: In a real app, you might fetch user info here for authorization
-  // For example: fetch user from DB to check permissions, quotas, etc.
+
+  // Check user is authenticated (all authenticated users can create notes)
+  ...RequireAuthenticated,
+
+  // No additional data to attach
   attachData: async (context: any) => {
-    // For this simple case, we don't need to attach additional data
-    // In a real app, you might do:
-    // const user = await User.findById(context.userId);
-    // return { user };
     return {};
   },
-  finalAuthorize: (context: any): any => ({ ...context }),
+
+  // All authenticated users can create notes
+  finalAuthorize: (context: any) => {
+    return true;
+  },
+
+  // Create and save the note
   doWork: async (context: any) => {
     // Create the note document with validated body
     const noteDocument = new Note(context.body);
@@ -44,12 +48,16 @@ export const CreateNoteHandlerUsingMongoose = defineExpressHandler({
     const saved = await noteDocument.save();
     return { noteDocument: saved };
   },
-  respond: (context: any): any => {
+
+  // Return created note with 201 status
+  respond: (context: any) => {
     return {
       unsafeResponse: context.noteDocument,
       status: 201,
     };
   },
+
+  // Validate response structure
   ...SanitizeResponseWithMongoose(NoteResponseDocFactory),
 });
 
