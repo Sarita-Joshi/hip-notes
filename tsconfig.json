@@ -1,0 +1,8 @@
+{
+  "include": ["src/**/*.ts"],
+  "extends": "./tsconfig.base.json",
+  "exclude": ["test/**/*.ts"],
+  "compilerOptions": {
+    "outDir": "lib"
+  }
+}
