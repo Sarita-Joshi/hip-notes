@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { defineExpressHandler, htZodFactory } from "hipthrusts";
+import { defineExpressHandler, htZodFactory, NoopFinalAuth } from "hipthrusts";
 import { z } from "zod";
 import { Note } from "../../models/mongoose/note";
 import { ExtractUserId, RequireAuthenticated } from "../mixins/auth";
@@ -35,15 +35,8 @@ export const ListNotesHandlerUsingZod = defineExpressHandler({
   // Check user is authenticated
   ...RequireAuthenticated,
 
-  // No additional data to attach
-  attachData: async (context: any) => {
-    return {};
-  },
-
-  // Users can only see their own notes
-  finalAuthorize: (context: any) => {
-    return true;
-  },
+  // No ownership check - filtering happens in doWork (user sees only their notes)
+  ...NoopFinalAuth(),
 
   // Fetch notes with pagination, search, and sorting
   doWork: async (context: any) => {
