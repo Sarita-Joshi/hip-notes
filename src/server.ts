@@ -7,17 +7,6 @@ const app = express();
 // Middleware
 app.use(express.json());
 
-// Mock authentication middleware
-app.use((req: any, res: Response, next: NextFunction) => {
-  // Simulate authenticated user
-  req.userId = "65a123450001234500012345";
-  req.body = {
-    ...req.body,
-    userId: "65a123450001234500012345", // insert user ID here
-  };
-  next();
-});
-
 // Routes
 app.use(notesRouter);
 
@@ -26,7 +15,7 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// Error handling middleware for hipthrusts handlers (must be after routes)
+// Error handling middleware (must be after routes)
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error("Error:", err);
 
@@ -87,7 +76,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 const PORT = process.env.PORT || 3000;
 // For WSL: Use Windows host IP. Get it with: cat /etc/resolv.conf | grep nameserver
 // Example: mongodb://172.24.32.1:27017/hipnotes
-const MONGO_URI = process.env.MONGO_URI || "mongodb://172.25.224.1:27017/hipnotes";
+const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/hipnotes";
 
 mongoose
   .connect(MONGO_URI)
