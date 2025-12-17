@@ -15,6 +15,9 @@ import { ListNotesHandlerUsingMongoose } from "../handlers/usingMongoose/listNot
 import { UpdateNoteHandlerUsingMongoose } from "../handlers/usingMongoose/updateNote";
 import { DeleteNoteHandlerUsingMongoose } from "../handlers/usingMongoose/deleteNote";
 
+// Import HTPipe handler (demonstrates explicit HTPipe composition)
+import { GetNoteByIdHandlerUsingHTPipe } from "../handlers/usingHTPipe/getNoteById";
+
 const router: IRouter = Router();
 
 // Choose validation strategy based on environment variable
@@ -47,5 +50,10 @@ router.get("/notes/:id", handlers.getById);
 router.get("/notes", handlers.list);
 router.patch("/notes/:id", handlers.update);
 router.delete("/notes/:id", handlers.delete);
+
+// Demo route: Explicit HTPipe composition example
+// This route demonstrates the same functionality as GET /notes/:id
+// but using explicit HTPipe() composition instead of defineExpressHandler()
+router.get("/htpipe/notes/:id", GetNoteByIdHandlerUsingHTPipe);
 
 export default router;
