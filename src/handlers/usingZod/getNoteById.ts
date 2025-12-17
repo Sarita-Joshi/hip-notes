@@ -1,6 +1,4 @@
-import mongoose from "mongoose";
 import { defineExpressHandler, htZodFactory } from "hipthrusts";
-import { z } from "zod";
 import { Note } from "../../models/mongoose/note";
 import { ExtractUserId, RequireAuthenticated } from "../mixins/auth";
 import { RequireOwnership } from "../mixins/ownership";
@@ -30,11 +28,6 @@ export const GetNoteByIdHandlerUsingZod = defineExpressHandler({
 
   // Verify ownership (only owner can access the note)
   ...RequireOwnership("note"),
-
-  // No additional work needed, just return the note
-  doWork: async (context: any) => {
-    return {};
-  },
 
   // Return the note
   respond: (context: any) => {
